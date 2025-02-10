@@ -1,5 +1,5 @@
 """
-Main frogramm module
+Main program module
 """
 
 from fastapi import FastAPI
