@@ -2,126 +2,148 @@
 DB models Mabager
 """
 
-from typing import Sequence
+from typing import Sequence, Type, Any
 from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from pydantic import BaseModel
 
-from .database import session as async_session, Base
+from .database import Base
 
 class DBManager():
 
-    @classmethod
+    @staticmethod
     async def get_objects(
-        cls,
-        model: type[Base],
+        db: AsyncSession,
+        model: Type[Base],
+        filters: dict[str, Any] | None = None,
         offset: int = 0,
         limit: int = 10
     ) -> Sequence[Base]:
         """
-        Method returns an array of objects
+        Возвращает список объектов с фильтрацией
         """
-        async with async_session() as session:
-            query = select(model).offset(offset).limit(limit)
-            result = await session.execute(query)
-            objects = result.scalars().all()
-            return objects
-    
-    @classmethod
+        query = select(model)
+        
+        if filters:
+            for field, value in filters.items():
+                query = query.where(getattr(model, field) == value)
+        
+        query = query.offset(offset).limit(limit)
+        result = await db.execute(query)
+        return result.scalars().all()
+
+
+    @staticmethod
     async def get_object(
-        cls,
-        model: type[Base],
-        object_id: int | UUID,
-    ) -> type[Base] | None:
+        db: AsyncSession,
+        model: Type[Base],
+        field: str,
+        value: Any
+    ) -> Base | None:
         """
-        Method returns a model instance
+        Возвращает объект по указанному полю (не обязательно id)
         """
-        async with async_session() as session:
-            query = select(model).where(model.id==object_id)
-            result = await session.execute(query)
-            _object = result.scalar_one_or_none()
-            return _object
+        query = select(model).where(getattr(model, field) == value)
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
 
 
-    @classmethod
+    @staticmethod
     async def create_object(
-        cls,
-        instance: type[Base]
-    ) -> type[Base]:
+        db: AsyncSession,
+        model: Type[Base],
+        commit: bool = False,
+        **kwargs
+    ) -> Base:
         """
-        Method for object creation
+        Создаёт объект в БД
         """
-        async with async_session() as session:
-            session.add(instance=instance)
-            await session.commit()
-            await session.refresh(instance=instance)
-            return instance
+        instance = model(**kwargs)
+        db.add(instance)
+
+        if commit:
+            await db.commit()
+            await db.refresh(instance)
+
+        return instance
     
 
-    @classmethod
+    @staticmethod
     async def delete_object(
-        cls,
+        db: AsyncSession,
         model: type[Base],
-        object_id: int | UUID,
+        field: str,
+        value: Any,
+        commit: bool = False,
     ) -> None:
         """
         Method deletes a model instance
         """
-        async with async_session() as session:
-            query = delete(model).where(model.id==object_id)
-            await session.execute(query)
-            await session.commit()
+        query = delete(model).where(getattr(model, field)==value)
+        await db.execute(query)
+
+        if commit:
+            await db.commit()
 
 
-    @classmethod
+    @staticmethod
     async def update_object(
-        cls,
-        model: type[Base],
-        object_id: int | UUID,
-        updated_data: type[BaseModel]
-    ) -> type[Base]:
+        db: AsyncSession,
+        model: Type[Base],
+        field: str,
+        value: Any,
+        commit: bool = False,
+        **kwargs
+    ) -> Base | None:
         """
         Method updates a model instance
         """
-        async with async_session() as session:
-            query = select(model).filter(model.id == object_id)
-            result = await session.execute(query)
-            old_object = result.scalar_one_or_none()
-            if old_object is None:
-                raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+        query = select(model).where(getattr(model, field) == value)
+        result = await db.execute(query)
+        instance = result.scalar_one_or_none()
 
-            for field, value in updated_data.dict().items():
-                setattr(old_object, field, value)
+        if instance is None:
+            return None
 
-            await session.commit()
-            await session.refresh(old_object)
-            return old_object
+        for field, value in kwargs.items():
+            setattr(instance, field, value)
+
+        if commit:
+            await db.commit()
+            await db.refresh(instance)
+
+        return instance
 
 
-    @classmethod
+    @staticmethod
     async def partial_update_object(
-        cls,
-        model: type[Base],
-        object_id: int | UUID,
-        updated_data: type[BaseModel]
-    ) -> type[Base]:
+        db: AsyncSession,
+        model: Type[Base],
+        field: str,
+        value: Any,
+        commit: bool = False,
+        **kwargs
+    ) -> Base | None:
         """
         Method partially updates a model instance
         """
-        async with async_session() as session:
-            query = select(model).filter(model.id == object_id)
-            result = await session.execute(query)
-            old_object = result.scalar_one_or_none()
-            if old_object is None:
-                raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+        query = select(model).where(getattr(model, field) == value)
+        result = await db.execute(query)
+        instance = result.scalar_one_or_none()
 
-            for field, value in updated_data.dict().items():
-                if value:
-                    setattr(old_object, field, value)
+        if instance is None:
+            return None
 
-            await session.commit()
-            await session.refresh(old_object)
-            return old_object
+        for field, value in kwargs.items():
+            if field in model.__table__.columns:
+                setattr(instance, field, value)
+
+        if commit:
+            await db.commit()
+            await db.refresh(instance)
+        
+        return instance
