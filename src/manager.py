@@ -3,13 +3,9 @@ DB models Manager
 """
 
 from typing import Sequence, Type, Any
-from uuid import UUID
 
-from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from pydantic import BaseModel
 
 from .database import Base
 
@@ -27,11 +23,11 @@ class DBManager():
         Возвращает список объектов с фильтрацией
         """
         query = select(model)
-        
+
         if filters:
             for field, value in filters.items():
                 query = query.where(getattr(model, field) == value)
-        
+
         query = query.offset(offset).limit(limit)
         result = await db.execute(query)
         return result.scalars().all()
@@ -70,7 +66,7 @@ class DBManager():
             await db.refresh(instance)
 
         return instance
-    
+
 
     @staticmethod
     async def delete_object(

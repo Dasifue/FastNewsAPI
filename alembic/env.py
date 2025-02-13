@@ -9,6 +9,7 @@ from alembic import context
 
 from src.database import Base, DATABASE_URL
 from src.news.models import *
+from src.users.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
