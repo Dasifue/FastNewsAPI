@@ -43,7 +43,7 @@ async def create_category(category: CategoryCreateSchema, db: AsyncSession = Dep
     return await CategoryService.create_category(db, category.dict())
 
 
-@category_router.delete("/{category_id}")
+@category_router.delete("/{category_id}", status_code=204)
 async def delete_category(category_id: int, db: AsyncSession = Depends(get_db)) -> None:
     """
     Delete category by id
