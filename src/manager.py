@@ -1,5 +1,5 @@
 """
-DB models Mabager
+DB models Manager
 """
 
 from typing import Sequence, Type, Any

@@ -1,5 +1,5 @@
 """
-Services module contains buisnes logic
+Services module contains business logic
 """
 
 from typing import Sequence
