@@ -5,13 +5,13 @@ Services module contains business logic
 import asyncio
 from typing import Sequence
 
-import aiofiles
-
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from ..models import News
+from ..utils import save_media
 from .categories import CategoryService
 
 from src.manager import DBManager
@@ -41,9 +41,9 @@ class NewsService():
         """
         Service
         """
-        news = await DBManager.get_object(db=db, model=News, field="id", value=news_id)
+        news = await DBManager.get_object(db=db, model=News, field="id", value=news_id, option=joinedload(News.category))
         if news is None:
-            raise HTTPException(status_code=404, detail="news not found")
+            raise HTTPException(status_code=404, detail="News not found")
         return news
 
 
@@ -57,12 +57,9 @@ class NewsService():
         Service
         """
 
-        category = await CategoryService.get_category(db, category_id=news["category_id"])
-        if category is None:
-            raise HTTPException(status_code=404, detail="Category not found")
+        await CategoryService.get_category(db, category_id=news["category_id"])
 
-
-        news["images"] = await asyncio.gather(*[save(file) for file in news["images"]])
+        news["images"] = await asyncio.gather(*[save_media(file) for file in news["images"]])
 
         return await DBManager.create_object(**news, db=db, model=News, commit=True)
 
@@ -85,25 +82,41 @@ class NewsService():
         db: AsyncSession,
         news_id: int,
         news: dict,
-        partial: bool = False
     ) -> News:
         """
         Service
         """
-        if partial:
-            news = await DBManager.partial_update_object(**news, db=db, model=News, field="id", value=news_id, commit=True)
-        else:
-            news = await DBManager.update_object(**news, db=db, model=News, field="id", value=news_id, commit=True)
+
+        await CategoryService.get_category(db=db, category_id=news["category_id"])
+
+        news["images"] = await asyncio.gather(*[save_media(file) for file in news["images"]])
+
+        news = await DBManager.update_object(**news, db=db, model=News, field="id", value=news_id, commit=True)
 
         if news is None:
             raise HTTPException(status_code=404, detail="News not found")
         return news
 
 
-async def save(upload_file: UploadFile) -> str:
-    file_path = f"media/news/{upload_file.filename}"
+    @classmethod
+    async def partial_update_news(
+        cls,
+        db: AsyncSession,
+        news_id: int,
+        news: dict,
+    ) -> News:
+        """
+        Service
+        """
 
-    async with aiofiles.open(file=file_path, mode="wb") as file:
-        await file.write(await upload_file.read())
+        if news["category_id"]:
+            await CategoryService.get_category(db=db, category_id=news["category_id"])
 
-    return file_path
+        if news["images"]:
+            news["images"] = await asyncio.gather(*[save_media(file) for file in news["images"]])
+
+        news = await DBManager.partial_update_object(**news, db=db, model=News, field="id", value=news_id, commit=True)
+
+        if news is None:
+            raise HTTPException(status_code=404, detail="News not found")
+        return news
