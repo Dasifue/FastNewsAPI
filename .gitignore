@@ -4,4 +4,7 @@ __pycache__/
 .env
 
 alembic/versions/*
-!alembic/versions/__init__.py
+!alembic/versions/.gitkeep
+
+media/*
+!media/.gitkeep

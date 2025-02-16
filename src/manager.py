@@ -38,12 +38,16 @@ class DBManager():
         db: AsyncSession,
         model: Type[Base],
         field: str,
-        value: Any
+        value: Any,
+        option: Any = None,
     ) -> Base | None:
         """
         Возвращает объект по указанному полю (не обязательно id)
         """
         query = select(model).where(getattr(model, field) == value)
+        if option:
+            query = query.options(option)
+        
         result = await db.execute(query)
         return result.scalar_one_or_none()
 
@@ -135,11 +139,11 @@ class DBManager():
             return None
 
         for field, value in kwargs.items():
-            if field in model.__table__.columns:
+            if field in model.__table__.columns and value:
                 setattr(instance, field, value)
 
         if commit:
             await db.commit()
             await db.refresh(instance)
-        
+
         return instance
