@@ -39,17 +39,17 @@ class DBManager():
         model: Type[Base],
         field: str,
         value: Any,
-        option: Any = None,
+        options: Any = None,
     ) -> Base | None:
         """
         Возвращает объект по указанному полю (не обязательно id)
         """
         query = select(model).where(getattr(model, field) == value)
-        if option:
-            query = query.options(option)
-        
+        if options:
+            query = query.options(*options)
+
         result = await db.execute(query)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
 
     @staticmethod
