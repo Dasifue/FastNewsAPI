@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Form, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
+from src.users import fastapi_users, User
 
 from ..services import NewsService
 from ..schemas import NewsReadSchema, NewsReadDetailsSchema
@@ -18,6 +19,7 @@ router = APIRouter(
     tags=["News"]
 )
 
+admin_user = fastapi_users.current_user(active=True, superuser=True)
 
 @router.get("", response_model=Sequence[NewsReadSchema])
 async def get_news(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)) -> Sequence[News]:
@@ -42,6 +44,7 @@ async def create_news_object(
     category_id:    Annotated[int, Form()],
     content:        Annotated[str | None, Form()] = None,
     db:             AsyncSession = Depends(get_db),
+    user:           User = Depends(admin_user),
 ) -> News:
     "Creates a news object"
     return await NewsService.create_news(
@@ -63,6 +66,7 @@ async def update_news(
     category_id:    Annotated[int, Form()],
     content:        Annotated[str, Form()],
     db:             AsyncSession = Depends(get_db),
+    user:           User = Depends(admin_user),
 ) -> News:
     """
     Updates a news object by id
@@ -87,6 +91,7 @@ async def partial_update_news(
     category_id:    Annotated[int | None, Form()] = None,
     content:        Annotated[str | None, Form()] = None,
     db:             AsyncSession = Depends(get_db),
+    user:           User = Depends(admin_user),
 ) -> News:
     """
     Partially updates a news object by id
@@ -103,7 +108,11 @@ async def partial_update_news(
     )
 
 @router.delete("/{news_id}", status_code=204)
-async def delete_news_object(news_id: int, db: AsyncSession = Depends(get_db)) -> None:
+async def delete_news_object(
+    news_id:    int, 
+    db:         AsyncSession = Depends(get_db),
+    user:       User = Depends(admin_user),
+    ) -> None:
     """
     Deletes a news object by id
     """
