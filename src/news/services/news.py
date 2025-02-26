@@ -4,6 +4,7 @@ Services module contains business logic
 
 import asyncio
 from typing import Sequence
+from datetime import datetime
 
 from fastapi import HTTPException
 
@@ -41,7 +42,13 @@ class NewsService():
         """
         Service
         """
-        news = await DBManager.get_object(db=db, model=News, field="id", value=news_id, option=joinedload(News.category))
+        news = await DBManager.get_object(
+            db=db,
+            model=News,
+            field="id",
+            value=news_id,
+            options=[joinedload(News.category), joinedload(News.comments)]
+        )
         if news is None:
             raise HTTPException(status_code=404, detail="News not found")
         return news
@@ -90,6 +97,7 @@ class NewsService():
         await CategoryService.get_category(db=db, category_id=news["category_id"])
 
         news["images"] = await asyncio.gather(*[save_media(file) for file in news["images"]])
+        news["updated_at"] = datetime.utcnow()
 
         news = await DBManager.update_object(**news, db=db, model=News, field="id", value=news_id, commit=True)
 
@@ -114,6 +122,7 @@ class NewsService():
 
         if news["images"]:
             news["images"] = await asyncio.gather(*[save_media(file) for file in news["images"]])
+        news["updated_at"] = datetime.utcnow()
 
         news = await DBManager.partial_update_object(**news, db=db, model=News, field="id", value=news_id, commit=True)
 

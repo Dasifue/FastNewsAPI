@@ -7,6 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from .categories import CategoryReadSchema
+from .comments import CommentReadSchema
 
 
 class NewsReadSchema(BaseModel):
@@ -30,3 +31,4 @@ class NewsReadDetailsSchema(NewsReadSchema):
     News read schema with detailed category data
     """
     category: CategoryReadSchema | None = None
+    comments: list[CommentReadSchema] = []

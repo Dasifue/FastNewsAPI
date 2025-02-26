@@ -8,10 +8,9 @@ from fastapi import HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models import Category
-
 from src.manager import DBManager
 
+from ..models import Category
 
 class CategoryService():
 
