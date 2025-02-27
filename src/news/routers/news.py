@@ -24,7 +24,8 @@ admin_user = fastapi_users.current_user(active=True, superuser=True)
 @router.get("", response_model=Sequence[NewsReadSchema])
 async def get_news(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)) -> Sequence[News]:
     """
-    Get all news
+    Get all news \n
+    No authentication required \n
     """
     return await NewsService.get_news(db=db, offset=offset, limit=limit)
 
@@ -32,7 +33,8 @@ async def get_news(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(
 @router.get("/{news_id}", response_model=NewsReadDetailsSchema)
 async def get_news_object(news_id: int, db: AsyncSession = Depends(get_db)) -> News:
     """
-    Get news by id
+    Get news by id \n
+    No authentication required \n
     """
     return await NewsService.get_news_object(db=db, news_id=news_id)
 
@@ -46,7 +48,11 @@ async def create_news_object(
     db:             AsyncSession = Depends(get_db),
     user:           User = Depends(admin_user),
 ) -> News:
-    "Creates a news object"
+    """
+    Creates a news object \n
+    Authentication required \n
+    Authenticated user must be superuser \n
+    """
     return await NewsService.create_news(
         db=db,
         news={
@@ -69,7 +75,9 @@ async def update_news(
     user:           User = Depends(admin_user),
 ) -> News:
     """
-    Updates a news object by id
+    Updates a news object by id \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await NewsService.update_news(
         db=db,
@@ -94,7 +102,9 @@ async def partial_update_news(
     user:           User = Depends(admin_user),
 ) -> News:
     """
-    Partially updates a news object by id
+    Partially updates a news object by id \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await NewsService.partial_update_news(
         db=db,
@@ -114,6 +124,8 @@ async def delete_news_object(
     user:       User = Depends(admin_user),
     ) -> None:
     """
-    Deletes a news object by id
+    Deletes a news object by id \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await NewsService.delete_news(db=db, news_id=news_id)

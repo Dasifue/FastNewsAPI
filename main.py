@@ -19,9 +19,9 @@ app.include_router(router=media_router)
 
 
 openapi_schema = get_openapi(
-        title="My API",
+        title="FastNews API",
         version="1.0.0",
-        description="This is my API with JWT authentication",
+        description="This is a simple FastAPI project with JWT authentication, SQLAlchemy ORM, and PostgreSQL database, alembic for migrations, and docker-compose for development and production environments.",
         routes=app.routes,
     )
 openapi_schema["components"]["securitySchemes"] = {

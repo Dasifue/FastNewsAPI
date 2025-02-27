@@ -25,7 +25,8 @@ admin_user = fastapi_users.current_user(active=True, superuser=True)
 @router.get("", response_model=Sequence[CategoryReadSchema])
 async def get_categories(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)) -> Sequence[Category]:
     """
-    Get all categories
+    Get all categories \n
+    No authentication required \n
     """
     return await CategoryService.get_categories(db, offset, limit)
 
@@ -33,7 +34,8 @@ async def get_categories(offset: int = 0, limit: int = 10, db: AsyncSession = De
 @router.get("/{category_id}", response_model=CategoryReadSchema)
 async def get_category(category_id: int, db: AsyncSession = Depends(get_db)) -> Category:
     """
-    Get category by id
+    Get category by id \n
+    No authentication required \n
     """
     return await CategoryService.get_category(db, category_id)
 
@@ -45,7 +47,9 @@ async def create_category(
     user:       User = Depends(admin_user),
     ) -> Category:
     """
-    Create category
+    Create category \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await CategoryService.create_category(db, category.dict())
 
@@ -57,7 +61,9 @@ async def delete_category(
     user:           User = Depends(admin_user),
 ) -> None:
     """
-    Delete category by id
+    Delete category by id \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await CategoryService.delete_category(db, category_id)
 
@@ -70,7 +76,9 @@ async def update_category(
     user:           User = Depends(admin_user),
 ) -> Category:
     """
-    Update category by id
+    Update category by id \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await CategoryService.update_category(db, category_id, category.dict())
 
@@ -84,6 +92,8 @@ async def partial_update_category(
     user:           User = Depends(admin_user),
 ) -> Category:
     """
-    Update category by id
+    Update category by id \n
+    Authentication required \n
+    Authenticated user must be superuser \n
     """
     return await CategoryService.update_category(db, category_id, category.dict(), partial=True)
