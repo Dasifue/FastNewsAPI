@@ -13,7 +13,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-
   server:
     build:
       context: .
@@ -25,6 +24,23 @@ services:
       - .env.docker
     depends_on:
       - db
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/server/Dockerfile
+    entrypoint: "/app/docker/server/worker.sh"
+    env_file:
+      - .env.docker
+    depends_on:
+      - server
+      - redis
+
+  redis:
+    image: redis:latest
+    expose:
+      - "6379"
 
   nginx:
     image: nginx:latest
