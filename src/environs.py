@@ -20,6 +20,11 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 JWT_SECRET = os.getenv("JWT_SECRET", "SECRET")
 USER_MANAGER_SECRET = os.getenv("USER_MANAGER_SECRET", "SECRET")
 
+SMTP_HOST = os.getenv("SMTP_HOST")
+SMTP_PORT = os.getenv("SMTP_PORT")
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+
 MEDIA_ROOT = "media/"
 
 __all__ = [
@@ -33,4 +38,8 @@ __all__ = [
     "MEDIA_ROOT",
     "REDIS_URL",
     "BASE_URL",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASSWORD"
 ]
