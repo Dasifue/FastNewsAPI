@@ -5,7 +5,7 @@ Categories Router
 
 from typing import Sequence
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Category
@@ -13,6 +13,7 @@ from ..schemas import CategoryReadSchema, CategoryCreateSchema
 from ..services import CategoryService
 
 from src.database import get_db
+from src.redis import cache
 from src.users import fastapi_users, User
 
 router = APIRouter(
@@ -23,6 +24,7 @@ router = APIRouter(
 admin_user = fastapi_users.current_user(active=True, superuser=True)
 
 @router.get("", response_model=Sequence[CategoryReadSchema])
+@cache(60 * 5)
 async def get_categories(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)) -> Sequence[Category]:
     """
     Get all categories \n
@@ -32,6 +34,7 @@ async def get_categories(offset: int = 0, limit: int = 10, db: AsyncSession = De
 
 
 @router.get("/{category_id}", response_model=CategoryReadSchema)
+@cache(60 * 5)
 async def get_category(category_id: int, db: AsyncSession = Depends(get_db)) -> Category:
     """
     Get category by id \n

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Form, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
+from src.redis import cache
 from src.users import fastapi_users, User
 
 from ..services import NewsService
@@ -22,6 +23,7 @@ router = APIRouter(
 admin_user = fastapi_users.current_user(active=True, superuser=True)
 
 @router.get("", response_model=Sequence[NewsReadSchema])
+@cache(60 * 5)
 async def get_news(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)) -> Sequence[News]:
     """
     Get all news \n
@@ -31,6 +33,7 @@ async def get_news(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(
 
 
 @router.get("/{news_id}", response_model=NewsReadDetailsSchema)
+@cache(60 * 5)
 async def get_news_object(news_id: int, db: AsyncSession = Depends(get_db)) -> News:
     """
     Get news by id \n

@@ -12,6 +12,7 @@ from ..schemas import CommentReadSchema, CommentCreateSchema, CommentUpdateSchem
 from ..services import CommentService
 
 from src.database import get_db
+from src.redis import cache
 from src.users import fastapi_users, User
 
 router = APIRouter(
@@ -23,6 +24,7 @@ authenticated_user = fastapi_users.current_user(active=True)
 
 
 @router.get("", response_model=Sequence[CommentReadSchema])
+@cache(60 * 5)
 async def get_comments(offset: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)) -> Sequence[Comment]:
     """
     Get all comments \n
@@ -32,6 +34,7 @@ async def get_comments(offset: int = 0, limit: int = 10, db: AsyncSession = Depe
 
 
 @router.get("/{comment_id}", response_model=CommentReadSchema)
+@cache(60 * 5)
 async def get_comment(comment_id: int, db: AsyncSession = Depends(get_db)) -> Comment:
     """
     Get comment by id \n
