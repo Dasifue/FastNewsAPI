@@ -4,16 +4,17 @@ Users router
 
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi_users import FastAPIUsers
 from sqlalchemy import select
+
 
 from src.redis import redis_client, generate_verification_code
 from src.celery import send_verification_code as send_code
 from src.database import async_session
 
 from .models import User
-from .manager import get_user_manager
+from .manager import get_user_manager, UserManager
 from .auth import auth_backend
 from .schemas import UserRead, UserCreate, UserUpdate, VerificationRequestSchema, VerificationSchema
 
@@ -79,3 +80,12 @@ async def verify_code(data: VerificationSchema) -> dict:
         user.is_verified = True
         await session.commit()
     return {"message": "Account verified"}
+
+
+@users_router.delete("/users-delete/", status_code=204)
+async def delete_user(
+    user:           User = Depends(fastapi_users.current_user()),
+    user_manager:   UserManager = Depends(get_user_manager)
+):  
+    await user_manager.delete(user)
+    
