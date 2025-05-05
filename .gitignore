@@ -9,3 +9,6 @@ __pycache__/
 
 media/*
 !media/.gitkeep
+
+.pytest_cache/
+.vscode/
