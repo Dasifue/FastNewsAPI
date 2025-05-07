@@ -50,7 +50,6 @@ async def test_admin_user_data():
     }
 
 
-
 @pytest.mark.anyio
 async def test_register_unsuccessful(test_user):
     user_data = {
@@ -98,7 +97,7 @@ async def test_login_unsuccessful(test_user):
 @pytest.mark.anyio
 async def test_get_user_info(test_user_data):
     access_token = await test_login(test_user_data)
-    
+
     async with AsyncClient(base_url=BASE_URL) as client:
         headers = {
             "Authorization": f"Bearer {access_token}"
