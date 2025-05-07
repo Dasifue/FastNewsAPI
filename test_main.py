@@ -34,6 +34,22 @@ async def test_user():
         assert delete_response.status_code == 204
 
 
+@pytest_asyncio.fixture(scope="session")
+async def test_user_data(test_user):
+    return {
+        "username": test_user["email"],
+        "password": test_user["password"]
+    }
+
+
+@pytest_asyncio.fixture(scope="session")
+async def test_admin_user_data():
+    return {
+        "username": "admin@example.com",
+        "password": "admin123"
+    }
+
+
 @pytest.mark.anyio
 async def test_register_unsuccessful(test_user):
     user_data = {
@@ -49,13 +65,18 @@ async def test_register_unsuccessful(test_user):
 
 
 @pytest.mark.anyio
-async def test_login(test_user):
-    login_data = {
-        "username": test_user["email"],
-        "password": test_user["password"]
-    }
+async def test_login(test_user_data):
     async with AsyncClient(base_url=BASE_URL) as client:
-        response = await client.post("/auth/jwt/login", data=login_data)
+        response = await client.post("/auth/jwt/login", data=test_user_data)
+        assert response.status_code == 200
+        assert response.json()["token_type"] == "bearer"
+    return response.json()["access_token"]
+
+
+@pytest.mark.anyio
+async def test_login_as_admin(test_admin_user_data):
+    async with AsyncClient(base_url=BASE_URL) as client:
+        response = await client.post("/auth/jwt/login", data=test_admin_user_data)
         assert response.status_code == 200
         assert response.json()["token_type"] == "bearer"
     return response.json()["access_token"]
@@ -74,9 +95,9 @@ async def test_login_unsuccessful(test_user):
 
 
 @pytest.mark.anyio
-async def test_get_user_info(test_user):
-    access_token = await test_login(test_user)
-    
+async def test_get_user_info(test_user_data):
+    access_token = await test_login(test_user_data)
+
     async with AsyncClient(base_url=BASE_URL) as client:
         headers = {
             "Authorization": f"Bearer {access_token}"
@@ -85,10 +106,25 @@ async def test_get_user_info(test_user):
         assert response.status_code == 200
         assert response.json()["email"] == "test_case@example.com"
         assert response.json()["full_name"] == "Test Case"
+        assert response.json()["is_superuser"] == False
 
 
 @pytest.mark.anyio
-async def test_get_user_info_unsuccessful(test_user):
+async def test_get_admin_user_info(test_admin_user_data):
+    access_token = await test_login_as_admin(test_admin_user_data)
+    
+    async with AsyncClient(base_url=BASE_URL) as client:
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        response = await client.get("/users/me", headers=headers)
+        assert response.status_code == 200
+        assert response.json()["email"] == "admin@example.com"
+        assert response.json()["is_superuser"] == True
+
+
+@pytest.mark.anyio
+async def test_get_user_info_unsuccessful():
     async with AsyncClient(base_url=BASE_URL) as client:
         headers = {
             "Authorization": f"Bearer WRONG TOKEN"
@@ -99,8 +135,8 @@ async def test_get_user_info_unsuccessful(test_user):
 
 
 @pytest.mark.anyio
-async def test_update_user_info(test_user):
-    access_token = await test_login(test_user)
+async def test_update_user_info(test_user_data):
+    access_token = await test_login(test_user_data)
 
     updated_user_data = {
         "full_name": "Test Case Updated",
